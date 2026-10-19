@@ -1,7 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS // от ошибок
 #include <stdio.h>
 #include <string.h>
-#include <windows.h> 
+#include <windows.h>
 
 #define INVENTORY_SIZE 10
 #define MAX_ITEMS 10
@@ -9,11 +9,11 @@
 #define FARMER_NAME_LEN 33
 #define MAX_RESOURCES 100
 
-int check (int scanf_result) { //проверка на дурака
+int check(int scanf_result) { // проверка на дурака
 	int c;
 	if (scanf_result != 1) {
-		while ((c = getchar()) != '\n' && c != EOF);  
-			printf("Не целое число.\n");
+		while ((c = getchar()) != '\n' && c != EOF);
+		printf("Не целое число.\n");
 		return 0;
 	}
 	return 1;
@@ -30,14 +30,15 @@ void set_item_names(char item_names[MAX_ITEMS][MAX_NAME_LEN]) { // заполн�
 	strcpy(item_names[7], "Шерсть");
 	strcpy(item_names[8], "Мясо");
 	strcpy(item_names[9], "Золото");
+} // ← здесь раньше не было закрывающей скобки
 
-void print_inventory(int inventory[], char item_names[MAX_ITEMS][MAX_NAME_LEN]) {  // вывод инвентаря 
+void print_inventory(int inventory[], char item_names[MAX_ITEMS][MAX_NAME_LEN]) { // вывод инвентаря
 	for (int i = 0; i < INVENTORY_SIZE; i++) {
 		printf("Слот %d: [%d] - %s\n", i, inventory[i], item_names[inventory[i]]);
 	}
 }
 
-int find_item_id(char item_names[MAX_ITEMS][MAX_NAME_LEN], char name[]) { //ищем предмет по айди
+int find_item_id(char item_names[MAX_ITEMS][MAX_NAME_LEN], char name[]) { // ищем предмет по айди
 	for (int i = 0; i < MAX_ITEMS; i++) {
 		if (strcmp(item_names[i], name) == 0) { // strcmp возвращает 0, если строки полностью совпадают
 			return i;
@@ -50,7 +51,7 @@ void load_items(char item_names[MAX_ITEMS][MAX_NAME_LEN]) { // Читаем на
 	char name[MAX_NAME_LEN];
 	int i;
 	set_item_names(item_names);
-	FILE* file = fopen("items.txt", "r"); 
+	FILE* file = fopen("items.txt", "r");
 	if (file == NULL) {
 		printf("Предупреждение: items.txt не найден, названия по умолчанию.\n");
 		return;
@@ -59,7 +60,7 @@ void load_items(char item_names[MAX_ITEMS][MAX_NAME_LEN]) { // Читаем на
 		if (fscanf(file, "%31s", name) != 1) {
 			break;
 		}
-		if (name[0] >= '0' && name[0] <= '9') {  // Если первый символ слова цифра , то это ID
+		if (name[0] >= '0' && name[0] <= '9') { // Если первый символ слова цифра, то это ID
 			if (fscanf(file, "%31s", name) != 1) {
 				break;
 			}
@@ -70,7 +71,7 @@ void load_items(char item_names[MAX_ITEMS][MAX_NAME_LEN]) { // Читаем на
 		printf("Предупреждение: в items.txt только %d названий, остальные по умолчанию.\n", i);
 	}
 	fclose(file);
-}
+} // ← здесь раньше не было закрывающей скобки
 
 int main() {
 	SetConsoleOutputCP(65001);
@@ -91,7 +92,7 @@ int main() {
 		printf("Введите имя фермера: ");
 	} while (!check(scanf("%32s", farmer_name)));
 	load_items(item_names);
-	
+
 	while (1)
 	{
 		printf("\nПривет, %s!\n"
@@ -110,13 +111,13 @@ int main() {
 
 		if (!check(scanf("%d", &choice)))
 		{
-			continue; // если вместо числа ввели что-то другое — показываем меню снова 
+			continue; // если вместо числа ввели что-то другое — показываем меню снова
 		}
 
 		switch (choice) {
 		case 0:
 			printf("До свидания, %s!\n", farmer_name);
-			return 0; // закрытие 
+			return 0; // закрытие
 		case 1:
 			printf("Текущее время: День %d, %d:00\n", current_day, current_hour);
 			break;
@@ -128,7 +129,7 @@ int main() {
 			}
 			if (work_hours < 0 || work_hours > max_work_hours)
 			{
-				printf("Допустимо от 0 до %d часов.\n", max_work_hours);  
+				printf("Допустимо от 0 до %d часов.\n", max_work_hours);
 				break;
 			}
 			current_hour += work_hours;
@@ -182,7 +183,7 @@ int main() {
 			printf("Выброшено: [%d] - %s\n", inventory[slot], item_names[inventory[slot]]);
 			inventory[slot] = 0;
 			break;
-		case 6:
+		case 6: {
 			printf("До сжатия:\n");
 			print_inventory(inventory, item_names);
 			int next = 0;
@@ -202,10 +203,7 @@ int main() {
 			print_inventory(inventory, item_names);
 			break;
 		}
-		default:
-			printf("Нет такого пункта, выберите 0-6.\n");
-			break;
-		case 7:
+		case 7: {
 			printf("Введите название предмета: ");
 			if (!check(scanf("%31s", search_name)))
 			{
@@ -237,8 +235,10 @@ int main() {
 			else
 			{
 				printf("Предмета \"%s\" нет в рюкзаке.\n", search_name);
+			}
 			break;
-		case 8:
+		}
+		case 8: {
 			FILE* diary = fopen("diary.txt", "a"); // "a" дописываем в конец, старые записи не трогаем
 			if (diary == NULL)
 			{
@@ -256,8 +256,66 @@ int main() {
 			fclose(diary);
 			printf("Запись добавлена в diary.txt.\n");
 			break;
+		}
+		case 9:
+		{
+			char names[MAX_RESOURCES][MAX_NAME_LEN];
+			int counts[MAX_RESOURCES];
+			char res_name[MAX_NAME_LEN]; // название очередного ресурса из файла
+			int count;// количество очередного ресурса из файла
+			int n = 0; // сколько разных ресурсов уже накопили
+			int pos; // позиция найденного ресурса в names
+			FILE* in = fopen("input.txt", "r"); // открываем на чтение
+			if (in == NULL)
+			{
+				printf("Файл input.txt не найден.\n");
+				break;
+			}
+			while (fscanf(in, "%31s %d", res_name, &count) == 2) // Читаем пару слово - число fscanf возвращает 2, если прочитаны оба значения
+			{
+				fscanf(in, " ,");
+				pos = -1;
+				for (int i = 0; i < n; i++)
+				{
+					if (strcmp(names[i], res_name) == 0)
+					{
+						pos = i;// запоминаем позицию
+						break;
+					}
+				}
+				if (pos >= 0) // ресурс уже был - прибавляем количество
+				{
+					counts[pos] += count;
+				}
+				else if (n < MAX_RESOURCES) // новый ресурс и место ещё есть
+				{
+					strcpy(names[n], res_name);
+					counts[n] = count;
+					n++;
+				}
+				else
+				{
+					printf("Слишком много разных ресурсов, %s пропущен.\n", res_name);
+				}
+			}
+			fclose(in);
+			FILE* out = fopen("output.txt", "w");
+			if (out == NULL)
+			{
+				printf("Не удалось открыть output.txt.\n");
+				break;
+			}
+			for (int i = 0; i < n; i++)
+			{
+				printf("%s: %d шт.\n", names[i], counts[i]);
+				fprintf(out, "%s: %d шт.\n", names[i], counts[i]);
+			}
+			fclose(out);
+			printf("Результат записан в output.txt.\n");
+			break;
+		}
 		default:
-			printf("Нет такого пункта, выберите 0-6.\n");
+			printf("Нет такого пункта, выберите 0-9.\n");
 			break;
 		}
 	}
