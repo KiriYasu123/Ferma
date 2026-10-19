@@ -1,7 +1,13 @@
 #define _CRT_SECURE_NO_WARNINGS // от ошибок
 #include <stdio.h>
+#include <string.h>
 #include <windows.h> 
-#define INVENTORY_SIZE 10 // кол-во слотов на будущее
+
+#define INVENTORY_SIZE 10
+#define MAX_ITEMS 10
+#define MAX_NAME_LEN 33
+#define FARMER_NAME_LEN 33
+#define MAX_RESOURCES 100
 
 int check (int scanf_result) { //проверка на дурака
 	int c;
@@ -13,33 +19,80 @@ int check (int scanf_result) { //проверка на дурака
 	return 1;
 }
 
-void print_item(int id) {
-	switch (id) {
-	default: printf("???"); break;
-	case 0: printf("Пусто");   break;
-	case 1: printf("Дерево");  break;
-	case 2: printf("Камень");  break;
-	case 3: printf("Семена");  break;
-	case 4: printf("Солома");  break;
-	case 5: printf("Цветок");  break;
-	case 6: printf("Железо");  break;
-	case 7: printf("Шерсть");  break;
-	case 8: printf("Мясо");    break;
-	case 9: printf("Золото");  break;
+
+void set_item_names(char item_names[MAX_ITEMS][MAX_NAME_LEN]) { // заполняем каталог названиями
+	strcpy(item_names[0], "Пусто");
+	strcpy(item_names[1], "Дерево");
+	strcpy(item_names[2], "Камень");
+	strcpy(item_names[3], "Семена");
+	strcpy(item_names[4], "Солома");
+	strcpy(item_names[5], "Цветок");
+	strcpy(item_names[6], "Железо");
+	strcpy(item_names[7], "Шерсть");
+	strcpy(item_names[8], "Мясо");
+	strcpy(item_names[9], "Золото");
+
+void print_inventory(int inventory[], char item_names[MAX_ITEMS][MAX_NAME_LEN]) {  // вывод инвентаря 
+	for (int i = 0; i < INVENTORY_SIZE; i++) {
+		printf("Слот %d: [%d] - %s\n", i, inventory[i], item_names[inventory[i]]);
 	}
 }
 
+int find_item_id(char item_names[MAX_ITEMS][MAX_NAME_LEN], char name[]) { //ищем предмет по айди
+	for (int i = 0; i < MAX_ITEMS; i++) {
+		if (strcmp(item_names[i], name) == 0) { // strcmp возвращает 0, если строки полностью совпадают
+			return i;
+		}
+	}
+	return -1;
+}
+
+void load_items(char item_names[MAX_ITEMS][MAX_NAME_LEN]) { // Читаем названия предметов из items.txt в массив item_names.
+	char name[MAX_NAME_LEN];
+	int i;
+	set_item_names(item_names);
+	FILE* file = fopen("items.txt", "r"); 
+	if (file == NULL) {
+		printf("Предупреждение: items.txt не найден, названия по умолчанию.\n");
+		return;
+	}
+	for (i = 0; i < MAX_ITEMS; i++) {
+		if (fscanf(file, "%31s", name) != 1) {
+			break;
+		}
+		if (name[0] >= '0' && name[0] <= '9') {  // Если первый символ слова цифра , то это ID
+			if (fscanf(file, "%31s", name) != 1) {
+				break;
+			}
+		}
+		strcpy(item_names[i], name);
+	}
+	if (i < MAX_ITEMS) {
+		printf("Предупреждение: в items.txt только %d названий, остальные по умолчанию.\n", i);
+	}
+	fclose(file);
+}
+
 int main() {
-	SetConsoleOutputCP(65001);   //для корректного отображения на русском
+	SetConsoleOutputCP(65001);
 	SetConsoleCP(65001);
 	int current_day = 1;
 	int current_hour = 8;
 	int choice;
 	int work_hours;
 	int max_work_hours = 10000;
-	int inventory[10] = {1, 0, 2, 0, 0, 3, 0, 4, 0, 5}; //заранее создаю несортированный инвентарь
+	int inventory[INVENTORY_SIZE] = { 1, 0, 2, 0, 0, 3, 0, 4, 0, 5 };
 	int slot;
 	int item_id;
+	char farmer_name[FARMER_NAME_LEN];
+	char item_names[MAX_ITEMS][MAX_NAME_LEN];
+	char search_name[MAX_NAME_LEN];
+
+	do {
+		printf("Введите имя фермера: ");
+	} while (!check(scanf("%32s", farmer_name)));
+	load_items(item_names);
+	
 	while (1)
 	{
 		printf("\nМЕНЮ\n"
