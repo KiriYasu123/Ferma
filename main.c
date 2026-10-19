@@ -19,7 +19,6 @@ int check (int scanf_result) { //проверка на дурака
 	return 1;
 }
 
-
 void set_item_names(char item_names[MAX_ITEMS][MAX_NAME_LEN]) { // заполняем каталог названиями
 	strcpy(item_names[0], "Пусто");
 	strcpy(item_names[1], "Дерево");
@@ -95,7 +94,8 @@ int main() {
 	
 	while (1)
 	{
-		printf("\nМЕНЮ\n"
+		printf("\nПривет, %s!\n"
+			"МЕНЮ\n"
 			" [0] - Выход\n"
 			" [1] - Посмотреть на часы\n"
 			" [2] - Промотать время (Поработать)\n"
@@ -103,7 +103,10 @@ int main() {
 			" [4] - Положить предмет в слот\n"
 			" [5] - Выбросить предмет\n"
 			" [6] - Сжатие инвентаря\n"
-			"Введите номер -> ");
+			" [7] - Поиск предмета в рюкзаке\n"
+			" [8] - Записать в дневник\n"
+			" [9] - Расшифровать старые записи\n"
+			"Введите номер -> ", farmer_name);
 
 		if (!check(scanf("%d", &choice)))
 		{
@@ -112,7 +115,7 @@ int main() {
 
 		switch (choice) {
 		case 0:
-			printf("До свидания!\n"); 
+			printf("До свидания, %s!\n", farmer_name);
 			return 0; // закрытие 
 		case 1:
 			printf("Текущее время: День %d, %d:00\n", current_day, current_hour);
@@ -134,42 +137,34 @@ int main() {
 			printf("Сейчас: День %d, %02d:00\n", current_day, current_hour);
 			break;
 		case 3:
-			for (int i = 0; i < INVENTORY_SIZE; i++) //отображение инвентаря по порядку
-			{
-				printf("Слот %d: [%d] (", i, inventory[i]);
-				print_item(inventory[i]);
-				printf(")\n");
-			}
+			print_inventory(inventory, item_names);
 			break;
 		case 4:
-		{
-			printf("Введите индекс слота (0-9): ");
+			printf("Введите индекс слота (0-%d): ", INVENTORY_SIZE - 1);
 			if (!check(scanf("%d", &slot)))
 			{
 				break;
 			}
-			if (slot < 0 || slot >= INVENTORY_SIZE) // 10-го слота нет
+			if (slot < 0 || slot >= INVENTORY_SIZE)
 			{
-				printf("Такого слота нет! Допустимо 0-%d.\n", INVENTORY_SIZE - 1); 
+				printf("Такого слота нет! Допустимо 0-%d.\n", INVENTORY_SIZE - 1);
 				break;
 			}
-			printf("Введите ID предмета (0-9): "); 
+			printf("Введите ID предмета (0-%d): ", MAX_ITEMS - 1);
 			if (!check(scanf("%d", &item_id)))
 			{
 				break;
 			}
-			if (item_id < 0 || item_id >= INVENTORY_SIZE) 
+			if (item_id < 0 || item_id >= MAX_ITEMS)
 			{
-				printf("Такого ID нет! Допустимо 0-%d.\n", INVENTORY_SIZE - 1);
+				printf("Такого ID нет! Допустимо 0-%d.\n", MAX_ITEMS - 1);
 				break;
 			}
 			inventory[slot] = item_id;
-			printf("В слот %d помещен предмет: [%d] (", slot, item_id);
-			print_item(item_id);
-			printf(")\n");
+			printf("В слот %d помещен предмет: [%d] - %s\n", slot, item_id, item_names[item_id]);
 			break;
 		case 5:
-			printf("Введите индекс слота для выброса (0-9): ");
+			printf("Введите индекс слота для выброса (0-%d): ", INVENTORY_SIZE - 1);
 			if (!check(scanf("%d", &slot)))
 			{
 				break;
@@ -184,18 +179,12 @@ int main() {
 				printf("Слот %d уже пуст.\n", slot);
 				break;
 			}
-			printf("Выброшено: [%d] (", inventory[slot]);
+			printf("Выброшено: [%d] - %s\n", inventory[slot], item_names[inventory[slot]]);
 			inventory[slot] = 0;
 			break;
 		case 6:
 			printf("До сжатия:\n");
-			for (int i = 0; i < INVENTORY_SIZE; i++)
-			{
-				printf("Слот %d: [%d] (", i, inventory[i]);
-				print_item(inventory[i]);
-				printf(")\n");
-			}
-			
+			print_inventory(inventory, item_names);
 			int next = 0;
 			for (int i = 0; i < INVENTORY_SIZE; i++)
 			{
@@ -210,12 +199,62 @@ int main() {
 				inventory[i] = 0;
 			}
 			printf("После сжатия:\n");
+			print_inventory(inventory, item_names);
+			break;
+		}
+		default:
+			printf("Нет такого пункта, выберите 0-6.\n");
+			break;
+		case 7:
+			printf("Введите название предмета: ");
+			if (!check(scanf("%31s", search_name)))
+			{
+				break;
+			}
+			item_id = find_item_id(item_names, search_name);
+			if (item_id == -1)
+			{
+				printf("Предмета \"%s\" нет в каталоге.\n", search_name);
+				break;
+			}
+			int found = 0;
 			for (int i = 0; i < INVENTORY_SIZE; i++)
 			{
-				printf("Слот %d: [%d] (", i, inventory[i]);
-				print_item(inventory[i]);
-				printf(")\n");
+				if (inventory[i] == item_id)
+				{
+					if (!found) // заголовок печатаем один раз, при первом совпадении
+					{
+						printf("Предмет \"%s\" лежит в слотах:", search_name);
+					}
+					printf(" %d", i);
+					found = 1;
+				}
 			}
+			if (found)
+			{
+				printf("\n");
+			}
+			else
+			{
+				printf("Предмета \"%s\" нет в рюкзаке.\n", search_name);
+			break;
+		case 8:
+			FILE* diary = fopen("diary.txt", "a"); // "a" дописываем в конец, старые записи не трогаем
+			if (diary == NULL)
+			{
+				printf("Не удалось открыть diary.txt.\n");
+				break;
+			}
+			fprintf(diary, "Фермер: %s\n", farmer_name);
+			fprintf(diary, "День %d, %02d:00\n", current_day, current_hour);
+			fprintf(diary, "Инвентарь:\n");
+			for (int i = 0; i < INVENTORY_SIZE; i++)
+			{
+				fprintf(diary, "Слот %d: %s\n", i, item_names[inventory[i]]);
+			}
+			fprintf(diary, "\n");
+			fclose(diary);
+			printf("Запись добавлена в diary.txt.\n");
 			break;
 		default:
 			printf("Нет такого пункта, выберите 0-6.\n");
