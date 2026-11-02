@@ -125,7 +125,108 @@ void free_grid(char** grid, int height) {
 	}
 	free(grid);
 }
-
+char** create_grid(int height, int width, char fill) {
+	char** grid = (char**)calloc(height, sizeof(char*));
+	if (grid == NULL) {
+		return NULL;
+	}
+	for (int i = 0; i < height; i++) {
+		grid[i] = (char*)malloc(width * sizeof(char));
+		if (grid[i] == NULL) {
+			free_grid(grid, height);
+			return NULL;
+		}
+		for (int j = 0; j < width; j++) {
+			grid[i][j] = fill;
+		}
+	}
+	return grid;
+}
+ 
+void fill_map(char** map, int height, int width, int obstacle_percent) {
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			if (y == 0 || y == height - 1 || x == 0 || x == width - 1) {
+				map[y][x] = CELL_WALL;
+			}
+			else if (rand() % PERCENT_MAX < obstacle_percent) {
+				if (rand() % PERCENT_MAX < TREE_SHARE) {
+					map[y][x] = CELL_TREE;
+				}
+				else {
+					map[y][x] = CELL_ROCK;
+				}
+			}
+			else {
+				map[y][x] = CELL_FLOOR;
+			}
+		}
+	}
+}
+ 
+int count_floor(char** map, int height, int width) {
+	int count = 0;
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			if (map[y][x] == CELL_FLOOR) {
+				count++;
+			}
+		}
+	}
+	return count;
+}
+ 
+void find_free_cell(char** map, int height, int width, int* x, int* y) {
+	do {
+		*x = random_range(1, width - 2);
+		*y = random_range(1, height - 2);
+	} while (map[*y][*x] != CELL_FLOOR);
+}
+ 
+void place_stairs_up(char** map, int hero_x, int hero_y) {
+	int dir_x[DIR_COUNT] = { 0, 0, -1, 1 };
+	int dir_y[DIR_COUNT] = { -1, 1, 0, 0 };
+	int start = rand() % DIR_COUNT;
+	for (int i = 0; i < DIR_COUNT; i++) {
+		int k = (start + i) % DIR_COUNT;
+		int nx = hero_x + dir_x[k];
+		int ny = hero_y + dir_y[k];
+		if (map[ny][nx] != CELL_WALL) {
+			map[ny][nx] = CELL_STAIRS_UP;
+			return;
+		}
+	}
+}
+ 
+void clear_cell(char** map, int x, int y) {
+	if (map[y][x] == CELL_TREE || map[y][x] == CELL_ROCK) {
+		map[y][x] = CELL_FLOOR;
+	}
+}
+ 
+void clear_path(char** map, int from_x, int from_y, int to_x, int to_y) {
+	int x = from_x;
+	int y = from_y;
+	while (x != to_x) {
+		if (x < to_x) {
+			x++;
+		}
+		else {
+			x--;
+		}
+		clear_cell(map, x, y);
+	}
+	while (y != to_y) {
+		if (y < to_y) {
+			y++;
+		}
+		else {
+			y--;
+		}
+		clear_cell(map, x, y);
+	}
+}
+ 
 int main() {
 	SetConsoleOutputCP(65001);
 	SetConsoleCP(65001);
