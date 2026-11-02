@@ -8,7 +8,32 @@
 #define MAX_NAME_LEN 33
 #define FARMER_NAME_LEN 33
 #define MAX_RESOURCES 100
-
+//для карты
+#define MIN_MAP_SIZE 5
+#define MAX_MAP_SIZE 30
+#define MIN_OBSTACLE_PERCENT 15
+#define MAX_OBSTACLE_PERCENT 30
+#define PERCENT_MAX 100
+#define TREE_SHARE 50
+#define VIEW_RADIUS 4
+#define MIN_FREE_CELLS 3
+#define DIR_COUNT 4
+#define CELL_WALL '#'
+#define CELL_FLOOR '.'
+#define CELL_TREE 'T'
+#define CELL_ROCK 'R'
+#define CELL_HERO '@'
+#define CELL_STAIRS_DOWN 'D'
+#define CELL_STAIRS_UP 'U'
+#define CELL_FOG '?'
+ //для передвижения
+#define KEY_UP 'W'
+#define KEY_LEFT 'A'
+#define KEY_DOWN 'S'
+#define KEY_RIGHT 'D'
+#define KEY_HOME 'Q'
+#define KEY_NONE '\0'
+ 
 int check(int scanf_result) { // проверка на дурака
 	int c;
 	if (scanf_result != 1) {
@@ -71,7 +96,35 @@ void load_items(char item_names[MAX_ITEMS][MAX_NAME_LEN]) { // Читаем на
 		printf("Предупреждение: в items.txt только %d названий, остальные по умолчанию.\n", i);
 	}
 	fclose(file);
-} // ← здесь раньше не было закрывающей скобки
+}
+
+int random_range(int min, int max) {
+	return min + rand() % (max - min + 1);
+}
+ 
+void clear_input() {
+	int c;
+	while ((c = getchar()) != '\n' && c != EOF);
+}
+ 
+char read_key() {
+	char key;
+	if (scanf(" %c", &key) != 1) {
+		return KEY_NONE;
+	}
+	clear_input();
+	return (char)toupper((unsigned char)key);
+}
+ 
+void free_grid(char** grid, int height) {
+	if (grid == NULL) {
+		return;
+	}
+	for (int i = 0; i < height; i++) {
+		free(grid[i]);
+	}
+	free(grid);
+}
 
 int main() {
 	SetConsoleOutputCP(65001);
