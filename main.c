@@ -16,28 +16,7 @@
 #define MAX_MAP_SIZE 30
 #define MIN_OBSTACLE_PERCENT 15
 #define MAX_OBSTACLE_PERCENT 30
-#define PERCENT_MAX 100
-#define TREE_SHARE 50
 #define VIEW_RADIUS 4
-#define MIN_FREE_CELLS 3
-#define DIR_COUNT 4
-#define CELL_WALL '#'
-#define CELL_FLOOR '.'
-#define CELL_TREE 'T'
-#define CELL_ROCK 'R'
-#define CELL_HERO '@'
-#define CELL_STAIRS_DOWN 'D'
-#define CELL_STAIRS_UP 'U'
-#define CELL_FOG '?'
-//для передвижения
-#define KEY_UP 'W'
-#define KEY_LEFT 'A'
-#define KEY_DOWN 'S'
-#define KEY_RIGHT 'D'
-#define KEY_HOME 'Q'
-#define KEY_NONE '\0'
-#define RESULT_HOME 0
-#define RESULT_STAIRS 1
 
 int check(int scanf_result) { // проверка на дурака
 	int c;
@@ -101,273 +80,165 @@ void load_items(char item_names[MAX_ITEMS][MAX_NAME_LEN]) { // Читаем на
 		printf("Предупреждение: в items.txt только %d названий, остальные по умолчанию.\n", i);
 	}
 	fclose(file);
-} 
+}
 
-int random_range(int min, int max) { //генерируем рандомный диапазон для капты
+int random_range(int min, int max) { // случайное число от min до max
 	return min + rand() % (max - min + 1);
 }
 
-void clear_input() { //очищаем буфер
-	int c;
-	while ((c = getchar()) != '\n' && c != EOF);
-}
-
-char read_key() { //считываем клавишу и приводим ее с верхнему регистру
-	char key;
-	if (scanf(" %c", &key) != 1) {
-		return KEY_NONE;
-	}
-	clear_input();
-	return (char)toupper((unsigned char)key);
-}
-
-void free_grid(char** grid, int height) { //освобождаем память массива
-	if (grid == NULL) { 
-		return;
-	}
-	for (int i = 0; i < height; i++) {	
-		free(grid[i]);
-	}
-	free(grid);
-}
-
-char** create_grid(int height, int width, char fill) { // Создаём двумерный массив height на width в динамической памяти и заполняем его символом fill
-	char** grid = (char**)calloc(height, sizeof(char*));
-	if (grid == NULL) { // Если памяти не хватило, calloc вернёт NULL
-		return NULL;
-	}
-	for (int i = 0; i < height; i++) { 
-		grid[i] = (char*)malloc(width * sizeof(char));	// Выделяем память под одну строку из width символов
-		if (grid[i] == NULL) {
-			free_grid(grid, height);
-			return NULL;
-		}
-		for (int j = 0; j < width; j++) { // Заполняем строку одинаковым символом
-			grid[i][j] = fill;	// Кладём символ fill в клетку
-		}
-	}
-	return grid;
-}
-
-void fill_map(char** map, int height, int width, int obstacle_percent) { //нполение карты - препятсвия и стены
-	for (int y = 0; y < height; y++) {
-		for (int x = 0; x < width; x++) {
-			if (y == 0 || y == height - 1 || x == 0 || x == width - 1) {
-				map[y][x] = CELL_WALL;
-			}
-			else if (rand() % PERCENT_MAX < obstacle_percent) {
-				if (rand() % PERCENT_MAX < TREE_SHARE) {
-					map[y][x] = CELL_TREE;
-				}
-				else {
-					map[y][x] = CELL_ROCK;
-				}
-			}
-			else {
-				map[y][x] = CELL_FLOOR; //свободное место 
-			}
-		}
-	}
-}
-
-int count_floor(char** map, int height, int width) { //подсчитываем кол-во свободных клеток,чтобы герой не застрял на спавне
-	int count = 0;
-	for (int y = 0; y < height; y++) {
-		for (int x = 0; x < width; x++) {
-			if (map[y][x] == CELL_FLOOR) {
-				count++;
-			}
-		}
-	}
-	return count;
-}
-
-void find_free_cell(char** map, int height, int width, int* x, int* y) {  //поиск случайной свободной клетки
-	do {
-		*x = random_range(1, width - 2);
-		*y = random_range(1, height - 2);
-	} while (map[*y][*x] != CELL_FLOOR);
-}
-
-void place_stairs_up(char** map, int hero_x, int hero_y) { //лестница U спвнится рядом с героем
-	int dir_x[DIR_COUNT] = { 0, 0, -1, 1 }; //лево право
-	int dir_y[DIR_COUNT] = { -1, 1, 0, 0 };//верх низ
-	int start = rand() % DIR_COUNT; // Выбираем случайное направление, с которого начнём проверку
-	for (int i = 0; i < DIR_COUNT; i++) {
-		int k = (start + i) % DIR_COUNT;
-		int nx = hero_x + dir_x[k];
-		int ny = hero_y + dir_y[k];
-		if (map[ny][nx] != CELL_WALL) {
-			map[ny][nx] = CELL_STAIRS_UP;
-			return;
-		}
-	}
-}
-
-void clear_cell(char** map, int x, int y) { //замена дерева или камня на лестницу
-	if (map[y][x] == CELL_TREE || map[y][x] == CELL_ROCK) {
-		map[y][x] = CELL_FLOOR;
-	}
-}
-
-void clear_path(char** map, int from_x, int from_y, int to_x, int to_y) { //очищение пути до лестницы,чтобы герой всегда мог пройти
-	int x = from_x;
-	int y = from_y;
-	while (x != to_x) {
-		if (x < to_x) {
-			x++;
-		}
-		else {
-			x--;
-		}
-		clear_cell(map, x, y);
-	}
-	while (y != to_y) {
-		if (y < to_y) {
-			y++;
-		}
-		else {
-			y--;
-		}
-		clear_cell(map, x, y);
-	}
-}
-
-void build_level(char** map, int height, int width, int* hero_x, int* hero_y) { //строим этаж
-	int obstacle_percent = random_range(MIN_OBSTACLE_PERCENT, MAX_OBSTACLE_PERCENT); // Случайный процент препятствий для этого этажа (15-30)
-	int stairs_x;
-	int stairs_y;
-	do { // Генерируем карту заново, пока на ней не окажется достаточно свободных клеток
-		fill_map(map, height, width, obstacle_percent);
-	} while (count_floor(map, height, width) < MIN_FREE_CELLS); // Если свободных клеток слишком мало - повторяем
-	find_free_cell(map, height, width, hero_x, hero_y); //находим свободную клетку для героя
-	place_stairs_up(map, *hero_x, *hero_y); //ставим лестницу на выход
-	do {
-		find_free_cell(map, height, width, &stairs_x, &stairs_y); //лестнца вниз
-	} while (stairs_x == *hero_x && stairs_y == *hero_y);
-	map[stairs_y][stairs_x] = CELL_STAIRS_DOWN;
-	clear_path(map, *hero_x, *hero_y, stairs_x, stairs_y);
-}
-
-int is_passable(char cell) { //проверка на препятствия
-	return cell == CELL_FLOOR || cell == CELL_STAIRS_DOWN || cell == CELL_STAIRS_UP;
-}
-
-int is_visible(int x, int y, int hero_x, int hero_y) { //видимость героя 
-	int dx = x - hero_x;
-	int dy = y - hero_y;
-	return dx * dx + dy * dy <= VIEW_RADIUS * VIEW_RADIUS; //находим расстояние по теореме пифагора
-}
-
-void print_map(char** map, int height, int width, int hero_x, int hero_y) { //вывод карты с учетом тумана войны
+void print_map(char** map, int height, int width, int hero_x, int hero_y) { // вывод карты с туманом войны
 	printf("\n");
 	for (int y = 0; y < height; y++) {
 		for (int x = 0; x < width; x++) {
 			if (x == hero_x && y == hero_y) {
-				printf("%c", CELL_HERO);
+				printf("@");
 			}
-			else if (is_visible(x, y, hero_x, hero_y)) { //рисуем карту если в радиусе
-				printf("%c", map[y][x]);
+			else if (abs(x - hero_x) <= VIEW_RADIUS && abs(y - hero_y) <= VIEW_RADIUS) {
+				printf("%c", map[y][x]); // клетка рядом с героем - показываем
 			}
 			else {
-				printf("%c", CELL_FOG); //заполняем туманом
+				printf("?"); // далеко от героя - неизвестность
 			}
 		}
 		printf("\n");
 	}
 }
 
-int get_direction(char key, int* dx, int* dy) { //для направлений
-	*dx = 0;
-	*dy = 0;
-	if (key == KEY_UP) {
-		*dy = -1;
-		return 1;
-	}
-	if (key == KEY_DOWN) {
-		*dy = 1;
-		return 1;
-	}
-	if (key == KEY_LEFT) {
-		*dx = -1;
-		return 1;
-	}
-	if (key == KEY_RIGHT) {
-		*dx = 1;
-		return 1;
-	}
-	return 0;
-}
-
-int explore_level(char** map, int height, int width, int hero_x, int hero_y, int depth) { //смотрим дейтсвия игрока
-	char key;
-	int dx;
-	int dy;
-	int new_x;
-	int new_y;
-	while (1) {
-		print_map(map, height, width, hero_x, hero_y);
-		printf("Глубина: %d\n", depth);
-		printf("W/A/S/D - идти, Q - сбежать домой (только на лестнице U)\n");
-		printf("Введите команду -> ");
-		key = read_key();
-		if (key == KEY_NONE) {
-			printf("Ввод закончился, возвращаемся домой.\n");
-			return RESULT_HOME;
-		}
-		if (key == KEY_HOME) {
-			if (map[hero_y][hero_x] == CELL_STAIRS_UP) {
-				printf("Вы вернулись домой.\n");
-				return RESULT_HOME; //возвращаем домой если игрок нажал Q 
-			}
-			printf("Домой можно уйти только с лестницы U!\n");
-			continue;
-		}
-		if (!get_direction(key, &dx, &dy)) { //если не wasd
-			printf("Неизвестная команда.\n");
-			continue;
-		}
-		new_x = hero_x + dx;
-		new_y = hero_y + dy;
-		if (new_x < 0 || new_x >= width || new_y < 0 || new_y >= height || !is_passable(map[new_y][new_x])) {
-			printf("Туда не пройти!\n"); //если препятсвие на пути
-			continue;
-		}
-		hero_x = new_x;
-		hero_y = new_y;
-		if (map[hero_y][hero_x] == CELL_STAIRS_DOWN) {
-			printf("Вы спустились на следующий этаж!\n");
-			return RESULT_STAIRS;
-		}
-	}
-}
-
-void play_adventure() { //основная функция приключений
-	char** map;
-	int height;
-	int width;
-	int hero_x;
-	int hero_y;
+void play_adventure() {
 	int depth = 1;
-	int result;
-	int in_dungeon = 1;
+	int in_dungeon = 1; // 1 - пока герой в подземелье
+	int on_floor;       // 1 - пока герой на текущем этаже
+	int height, width, percent, hero_x, hero_y, ux, uy, dx, dy, new_x, new_y;
+	char key;
+	char** map;
+
 	while (in_dungeon) {
+		// каждый этаж - новая карта случайного размера в динамической памяти
 		height = random_range(MIN_MAP_SIZE, MAX_MAP_SIZE);
 		width = random_range(MIN_MAP_SIZE, MAX_MAP_SIZE);
-		map = create_grid(height, width, CELL_WALL);
-		if (map == NULL) {
-			printf("Не хватило памяти для карты.\n");
-			return;
+		percent = random_range(MIN_OBSTACLE_PERCENT, MAX_OBSTACLE_PERCENT);
+		map = (char**)malloc(height * sizeof(char*));
+		for (int y = 0; y < height; y++) {
+			map[y] = (char*)malloc(width * sizeof(char));
 		}
-		build_level(map, height, width, &hero_x, &hero_y);
-		result = explore_level(map, height, width, hero_x, hero_y, depth);
-		free_grid(map, height);
-		if (result == RESULT_HOME) {
-			in_dungeon = 0;
+
+		// заполняем карту
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				if (y == 0 || y == height - 1 || x == 0 || x == width - 1) {
+					map[y][x] = '#'; // внешние границы - стены
+				}
+				else if (rand() % 100 < percent) {
+					if (rand() % 2 == 0) {
+						map[y][x] = 'T'; // дерево
+					}
+					else {
+						map[y][x] = 'R'; // камень
+					}
+				}
+				else {
+					map[y][x] = '.'; // свободная клетка
+				}
+			}
+		}
+
+		// герой появляется на свободной клетке
+		do {
+			hero_x = random_range(1, width - 2);
+			hero_y = random_range(1, height - 2);
+		} while (map[hero_y][hero_x] != '.');
+
+		// лестница вверх U рядом с героем (первая соседняя клетка, которая не стена)
+		ux = hero_x;
+		uy = hero_y;
+		if (map[uy - 1][ux] != '#') {
+			uy--;
+		}
+		else if (map[uy + 1][ux] != '#') {
+			uy++;
+		}
+		else if (map[uy][ux - 1] != '#') {
+			ux--;
 		}
 		else {
-			depth++;
+			ux++;
 		}
+		map[uy][ux] = 'U';
+
+		// лестница вниз D в случайном месте (не на герое и не на U)
+		do {
+			dx = random_range(1, width - 2);
+			dy = random_range(1, height - 2);
+		} while ((dx == hero_x && dy == hero_y) || (dx == ux && dy == uy));
+		map[dy][dx] = 'D';
+
+		on_floor = 1;
+		while (on_floor) {
+			print_map(map, height, width, hero_x, hero_y);
+			printf("Глубина: %d\n", depth);
+			printf("W - вверх, A - влево, S - вниз, D - вправо, Q - сбежать домой (только с лестницы U)\n");
+			printf("Введите команду -> ");
+			if (scanf(" %c", &key) != 1) { // если ввод закончился
+				on_floor = 0;
+				in_dungeon = 0;
+				break;
+			}
+			key = toupper(key);
+
+			if (key == 'Q') {
+				if (map[hero_y][hero_x] == 'U') {
+					printf("Вы вернулись домой.\n");
+					on_floor = 0;
+					in_dungeon = 0;
+				}
+				else {
+					printf("Домой можно уйти только с лестницы U!\n");
+				}
+				continue;
+			}
+
+			// считаем, куда герой хочет шагнуть
+			new_x = hero_x;
+			new_y = hero_y;
+			if (key == 'W') {
+				new_y--;
+			}
+			else if (key == 'S') {
+				new_y++;
+			}
+			else if (key == 'A') {
+				new_x--;
+			}
+			else if (key == 'D') {
+				new_x++;
+			}
+			else {
+				printf("Неизвестная команда.\n");
+				continue;
+			}
+
+			// ходить можно только по свободной клетке или лестнице
+			if (map[new_y][new_x] == '.' || map[new_y][new_x] == 'U' || map[new_y][new_x] == 'D') {
+				hero_x = new_x;
+				hero_y = new_y;
+			}
+			else {
+				printf("Туда не пройти!\n");
+			}
+
+			// герой встал на D - уходим на следующий этаж
+			if (map[hero_y][hero_x] == 'D') {
+				printf("Вы спустились на следующий этаж!\n");
+				depth++;
+				on_floor = 0;
+			}
+		}
+
+		// удаляем старую карту
+		for (int y = 0; y < height; y++) {
+			free(map[y]);
+		}
+		free(map);
 	}
 }
 
