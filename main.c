@@ -104,11 +104,66 @@ void print_map(char** map, int height, int width, int hero_x, int hero_y) { // �
 	}
 }
 
+void fill_map(char** map, int height, int width, int percent) { // заполняем карту: стены по краям, внутри деревья, камни и пол
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			if (y == 0 || y == height - 1 || x == 0 || x == width - 1) {
+				map[y][x] = '#'; // внешние границы - стены
+			}
+			else if (rand() % 100 < percent) {
+				if (rand() % 2 == 0) {
+					map[y][x] = 'T'; // дерево
+				}
+				else {
+					map[y][x] = 'R'; // камень
+				}
+			}
+			else {
+				map[y][x] = '.'; // свободная клетка
+			}
+		}
+	}
+}
+
+void place_hero(char** map, int height, int width, int* hero_x, int* hero_y) { // герой появляется на свободной клетке
+	do {
+		*hero_x = random_range(1, width - 2);
+		*hero_y = random_range(1, height - 2);
+	} while (map[*hero_y][*hero_x] != '.');
+}
+
+void place_stairs_up(char** map, int hero_x, int hero_y, int* ux, int* uy) { // лестница вверх U рядом с героем (первая соседняя клетка, которая не стена)
+	*ux = hero_x;
+	*uy = hero_y;
+	if (map[*uy - 1][*ux] != '#') {
+		(*uy)--;
+	}
+	else if (map[*uy + 1][*ux] != '#') {
+		(*uy)++;
+	}
+	else if (map[*uy][*ux - 1] != '#') {
+		(*ux)--;
+	}
+	else {
+		(*ux)++;
+	}
+	map[*uy][*ux] = 'U';
+}
+
+void place_stairs_down(char** map, int height, int width, int hero_x, int hero_y, int ux, int uy) { // лестница вниз D в случайном месте (не на герое и не на U)
+	int dx, dy;
+	do {
+		dx = random_range(1, width - 2);
+		dy = random_range(1, height - 2);
+	} while ((dx == hero_x && dy == hero_y) || (dx == ux && dy == uy));
+	map[dy][dx] = 'D';
+}
+
 void play_adventure() {
 	int depth = 1;
 	int in_dungeon = 1; // 1 - пока герой в подземелье
 	int on_floor;       // 1 - пока герой на текущем этаже
-	int height, width, percent, hero_x, hero_y, ux, uy, dx, dy, new_x, new_y;
+	int height, width, percent, hero_x, hero_y, ux, uy, new_x, new_y;
 	char key;
 	char** map;
 
@@ -122,55 +177,10 @@ void play_adventure() {
 			map[y] = (char*)malloc(width * sizeof(char));
 		}
 
-		// заполняем карту
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++) {
-				if (y == 0 || y == height - 1 || x == 0 || x == width - 1) {
-					map[y][x] = '#'; // внешние границы - стены
-				}
-				else if (rand() % 100 < percent) {
-					if (rand() % 2 == 0) {
-						map[y][x] = 'T'; // дерево
-					}
-					else {
-						map[y][x] = 'R'; // камень
-					}
-				}
-				else {
-					map[y][x] = '.'; // свободная клетка
-				}
-			}
-		}
-
-		// герой появляется на свободной клетке
-		do {
-			hero_x = random_range(1, width - 2);
-			hero_y = random_range(1, height - 2);
-		} while (map[hero_y][hero_x] != '.');
-
-		// лестница вверх U рядом с героем (первая соседняя клетка, которая не стена)
-		ux = hero_x;
-		uy = hero_y;
-		if (map[uy - 1][ux] != '#') {
-			uy--;
-		}
-		else if (map[uy + 1][ux] != '#') {
-			uy++;
-		}
-		else if (map[uy][ux - 1] != '#') {
-			ux--;
-		}
-		else {
-			ux++;
-		}
-		map[uy][ux] = 'U';
-
-		// лестница вниз D в случайном месте (не на герое и не на U)
-		do {
-			dx = random_range(1, width - 2);
-			dy = random_range(1, height - 2);
-		} while ((dx == hero_x && dy == hero_y) || (dx == ux && dy == uy));
-		map[dy][dx] = 'D';
+		fill_map(map, height, width, percent);
+		place_hero(map, height, width, &hero_x, &hero_y);
+		place_stairs_up(map, hero_x, hero_y, &ux, &uy);
+		place_stairs_down(map, height, width, hero_x, hero_y, ux, uy);
 
 		on_floor = 1;
 		while (on_floor) {
